@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Cardápio Digital — Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel-2: #1e222b; --border: #2a2f3a;
+    --text: #e8eaed; --muted: #9aa1ac; --accent: #ff8a3d; --accent-text: #1a0e05;
+    --ok: #3ecf8e; --danger: #ef5967; --warn: #f2c14e; --radius: 12px;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+  button { font: inherit; cursor: pointer; border-radius: 10px; padding: 9px 14px; border: 1px solid var(--border); background: var(--panel-2); color: var(--text); }
+  button:disabled { opacity: .45; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+  button.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+  button.ghost { background: transparent; }
+  button.small { padding: 6px 10px; font-size: 13px; }
+  input, textarea, select { font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; width: 100%; }
+  label { display: grid; gap: 6px; font-size: 13px; color: var(--muted); margin-top: 12px; }
+  .muted { color: var(--muted); }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--panel-2); border: 1px solid var(--border); }
+  .badge.warn { background: var(--warn); color: #1d1600; border-color: var(--warn); }
+  .badge.accent { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .badge.ok { background: var(--ok); color: #04150d; border-color: var(--ok); }
+  .badge.danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .small { font-size: 13px; }
+
+  /* top bar */
+  header.topbar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; }
+  .brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tabs button { background: transparent; border-color: transparent; color: var(--muted); font-weight: 600; padding: 7px 11px; }
+  .tabs button.active { background: var(--panel-2); color: var(--text); border-color: var(--border); }
+  .tab-alert { color: var(--warn); }
+  .draft { font-size: 11px; color: var(--muted); border: 1px dashed var(--border); padding: 3px 8px; border-radius: 6px; }
+  main { padding: 16px; max-width: 1200px; margin: 0 auto; }
+  .view { display: none; } .view.active { display: block; }
+  h1 { font-size: 20px; margin: 0; } h2 { font-size: 17px; margin: 0; }
+
+  /* landing */
+  #view-landing.active { display: flex; min-height: calc(100vh - 120px); align-items: center; justify-content: center; flex-direction: column; gap: 18px; text-align: center; }
+  .roles { display: grid; grid-template-columns: repeat(2, minmax(220px, 320px)); gap: 16px; }
+  .role { text-align: left; padding: 26px 22px; border-radius: 16px; background: var(--panel); }
+  .role:hover { border-color: var(--accent); }
+  .role .icon { font-size: 32px; }
+  .role h2 { margin: 10px 0 6px; } .role p { margin: 0 0 12px; color: var(--muted); font-size: 14px; line-height: 1.45; }
+  .role .cta { color: var(--accent); font-weight: 700; font-size: 14px; }
+
+  /* customer: light phone */
+  .phone { max-width: 430px; margin: 0 auto; min-height: 720px; border-radius: 28px; overflow: hidden; position: relative;
+    --bg: #fffaf5; --panel: #ffffff; --panel-2: #f6f0ea; --border: #eadfd4; --text: #22180f; --muted: #7a6d61; --accent: #e8681c; --accent-text: #fff;
+    background: var(--bg); color: var(--text); border: 8px solid #2b2f38; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+  .phone-scroll { height: 720px; overflow-y: auto; padding: 0 14px 110px; }
+  .c-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 16px 0 8px; }
+  .c-head h1 { font-size: 19px; }
+  .c-tabs { display: flex; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 4; }
+  .c-tabs button { flex: 1; border: none; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; color: var(--muted); font-weight: 700; }
+  .c-tabs button.active { color: var(--accent); border-color: var(--accent); }
+  .tools { position: sticky; top: 45px; z-index: 3; background: var(--bg); padding: 10px 0 6px; display: grid; gap: 8px; }
+  .chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  .chip { white-space: nowrap; border-radius: 999px; padding: 6px 14px; background: var(--panel); }
+  .cat-title { font-size: 15px; margin: 18px 0 8px; }
+  .product { position: relative; width: 100%; display: flex; gap: 12px; text-align: left; align-items: center; background: var(--panel); padding: 12px; margin-bottom: 8px; color: var(--text); }
+  .product .info { flex: 1; display: grid; gap: 4px; min-width: 0; }
+  .product .desc { font-size: 13px; color: var(--muted); }
+  .thumb { width: 72px; height: 72px; border-radius: 10px; flex: none; display: grid; place-items: center; font-size: 34px; background: var(--panel-2); }
+  .qty-badge { position: absolute; top: -6px; right: -6px; }
+  .notice { background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-top: 12px; font-size: 14px; }
+  .cart-bar { position: absolute; left: 14px; right: 14px; bottom: 16px; display: flex; justify-content: space-between; padding: 14px 18px; border-radius: 14px; z-index: 6; box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+  .order-card { display: grid; gap: 6px; margin-top: 10px; }
+  .item-line { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; }
+  .demo-hint { font-size: 12px; color: var(--muted); border: 1px dashed var(--border); border-radius: 10px; padding: 8px 10px; margin-top: 12px; }
+
+  /* sheets */
+  .backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.5); z-index: 20; display: flex; align-items: flex-end; }
+  .backdrop.fixed { position: fixed; align-items: center; justify-content: center; padding: 16px; }
+  .sheet { background: var(--panel); color: var(--text); width: 100%; max-height: 88%; overflow-y: auto; border-radius: 18px 18px 0 0; padding: 18px; }
+  .backdrop.fixed .sheet { max-width: 560px; border-radius: 18px; border: 1px solid var(--border); max-height: 90vh; }
+  .hero { height: 150px; border-radius: 12px; background: var(--panel-2); display: grid; place-items: center; font-size: 70px; }
+  .stepper { display: flex; align-items: center; gap: 10px; }
+  .stepper button { width: 38px; height: 38px; padding: 0; border-radius: 50%; }
+  .stepper span { min-width: 18px; text-align: center; font-weight: 700; }
+  .cart-line { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .wide { width: 100%; padding: 14px; margin-top: 14px; }
+
+  /* owner: mesas */
+  .alerts { display: grid; gap: 8px; margin: 12px 0; }
+  .alert { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; text-align: left; border-color: var(--warn); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 4px rgba(242,193,78,.25); } }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+  .table { text-align: left; display: grid; gap: 5px; min-height: 104px; align-content: start; background: var(--panel); }
+  .table.open { border-color: var(--accent); }
+  .table.flag { box-shadow: 0 0 0 2px var(--warn) inset; border-color: var(--warn); }
+  .table .total { font-size: 18px; font-weight: 800; }
+  .o-row { border-top: 1px solid var(--border); padding: 10px 0; display: grid; gap: 3px; }
+  .o-row.cancelled { opacity: .5; text-decoration: line-through; }
+  .close-box { background: var(--panel-2); margin-top: 12px; display: grid; gap: 10px; }
+
+  /* kds */
+  .kds { display: grid; grid-template-columns: repeat(3, minmax(240px, 1fr)); gap: 12px; margin-top: 12px; }
+  .col { display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { display: flex; gap: 8px; align-items: center; }
+  .count { background: var(--panel-2); border-radius: 999px; padding: 0 10px; font-size: 14px; }
+  .ticket { background: var(--panel); border: 1px solid var(--border); border-left: 6px solid var(--ok); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; }
+  .ticket.warn { border-left-color: var(--warn); } .ticket.late { border-left-color: var(--danger); }
+  .ticket .code { font-weight: 800; font-size: 18px; }
+  .ticket ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; }
+  .note { color: var(--warn); font-weight: 700; font-size: 13px; }
+  .recent { display: flex; gap: 6px; align-items: center; overflow-x: auto; white-space: nowrap; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border); }
+
+  /* admin menu */
+  .m-cat { margin-top: 12px; }
+  .m-item { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .m-item .info { flex: 1; min-width: 160px; display: grid; gap: 2px; }
+  .m-item.soldout .info, .m-item.soldout .price { opacity: .45; }
+  .m-item .thumb { width: 48px; height: 48px; font-size: 24px; }
+
+  /* qr */
+  .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 12px; }
+  .qr-card { background: #fff; color: #111; border-radius: 14px; padding: 16px; text-align: center; display: grid; gap: 6px; justify-items: center; }
+  .qr-card .lbl { font-size: 22px; font-weight: 800; }
+  .qr-card .hint { font-size: 12px; color: #555; }
+  .qr-card button { color: #333; border-color: #ccc; background: #fff; }
+
+  /* caixa */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin: 12px 0; }
+  .kpis .card { display: grid; gap: 4px; } .kpis strong { font-size: 22px; }
+  .line { padding: 9px 0; border-top: 1px solid var(--border); }
+
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 700; z-index: 100; opacity: 0; transition: all .25s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%); }
+
+  @media (max-width: 760px) {
+    .roles { grid-template-columns: 1fr; width: 100%; max-width: 340px; }
+    .draft { display: none; }
+    .phone { border: none; border-radius: 0; box-shadow: none; margin: -16px; min-height: calc(100vh - 60px); }
+    .phone-scroll { height: calc(100vh - 60px); }
+    .kds { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 84vw; overflow-x: auto; scroll-snap-type: x mandatory; }
+    .col { scroll-snap-align: start; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="dot"></span> Cardápio Digital</div>
+  <nav class="tabs" id="tabs"></nav>
+  <span class="spacer"></span>
+  <label id="table-picker" style="display:none;margin:0;flex-direction:row;align-items:center;gap:6px;color:var(--muted)">Mesa do cliente
+    <select id="table-select" style="width:auto;padding:6px 10px"></select></label>
+  <button class="ghost small" id="switch-role" style="display:none">← Trocar visão</button>
+  <span class="draft">demonstração — dados fictícios</span>
+</header>
+
+<main>
+  <section id="view-landing" class="view active">
+    <h1>Cardápio digital com pedido pelo QR Code</h1>
+    <p class="muted" style="margin:0">Escolha um lado. Tudo começa vazio: faça pedidos como cliente (em qualquer mesa) e veja chegar na cozinha, nas mesas e no caixa.</p>
+    <div class="roles">
+      <button class="role" data-role="customer">
+        <div class="icon">📱</div>
+        <h2>Sou cliente</h2>
+        <p>O que o cliente vê ao escanear o QR Code da mesa: cardápio, pedido, status e pedir a conta.</p>
+        <span class="cta">Ver como cliente →</span>
+      </button>
+      <button class="role" data-role="owner">
+        <div class="icon">🧑‍🍳</div>
+        <h2>Sou dono do restaurante</h2>
+        <p>Mesas ao vivo, tela da cozinha, edição do cardápio, QR Codes e caixa do dia.</p>
+        <span class="cta">Ver lado do restaurante →</span>
+      </button>
+    </div>
+  </section>
+
+  <section id="view-customer" class="view"><div class="phone" id="phone"></div></section>
+  <section id="view-mesas" class="view"></section>
+  <section id="view-cozinha" class="view"></section>
+  <section id="view-cardapio" class="view"></section>
+  <section id="view-qrcodes" class="view"></section>
+  <section id="view-caixa" class="view"></section>
+  <section id="view-ajustes" class="view"></section>
+</main>
+<div id="modal-root"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Demo of card_dig V1 (QR ordering, no integrated payment). Everything is in
+// memory in this page: no server, nothing is saved. Mirrors the real apps in
+// web/apps (customer-pwa, operations-pwa, kds-pwa).
+// ---------------------------------------------------------------------------
+
+const MIN = 60000;
+const now = () => Date.now();
+const STATUS = { SUBMITTED: 'Recebido', IN_PREPARATION: 'Em preparo', READY: 'Pronto', SERVED: 'Entregue', CANCELLED: 'Cancelado' };
+const STATUS_BADGE = { SUBMITTED: 'warn', IN_PREPARATION: 'accent', READY: 'ok', SERVED: '', CANCELLED: 'danger' };
+
+const store = { name: 'Restaurante Exemplo', orderingEnabled: true };
+
+let nextId = 1;
+const id = () => 'x' + (nextId++);
+
+const menu = [
+  { id: id(), name: 'Entradas', items: [
+    { id: id(), name: 'Batata frita', desc: 'Porção crocante com molho da casa.', price: 2900, emoji: '🍟', active: true },
+    { id: id(), name: 'Bruschetta', desc: 'Pão italiano, tomate, manjericão e azeite.', price: 2600, emoji: '🍅', active: true },
+    { id: id(), name: 'Pastéis (6 un.)', desc: 'Carne, queijo ou palmito.', price: 3200, emoji: '🥟', active: true },
+  ]},
+  { id: id(), name: 'Pratos', items: [
+    { id: id(), name: 'Filé com fritas', desc: 'Filé grelhado, arroz e batata frita.', price: 6900, emoji: '🥩', active: true },
+    { id: id(), name: 'Risoto de cogumelos', desc: 'Arroz arbóreo, cogumelos e parmesão.', price: 5900, emoji: '🍄', active: true },
+    { id: id(), name: 'Parmegiana de frango', desc: 'Com arroz e fritas. Serve 1 pessoa.', price: 5400, emoji: '🍗', active: true },
+    { id: id(), name: 'Salada da casa', desc: 'Folhas, tomate, queijo e croutons.', price: 3800, emoji: '🥗', active: true },
+  ]},
+  { id: id(), name: 'Bebidas', items: [
+    { id: id(), name: 'Refrigerante lata', desc: '', price: 700, emoji: '🥤', active: true },
+    { id: id(), name: 'Suco natural', desc: 'Laranja, limão ou abacaxi.', price: 1200, emoji: '🍊', active: true },
+    { id: id(), name: 'Caipirinha', desc: 'Limão, cachaça e açúcar.', price: 2400, emoji: '🍹', active: true },
+    { id: id(), name: 'Água mineral', desc: 'Com ou sem gás.', price: 500, emoji: '💧', active: true },
+  ]},
+  { id: id(), name: 'Sobremesas', items: [
+    { id: id(), name: 'Petit gâteau', desc: 'Com sorvete de creme.', price: 2600, emoji: '🍫', active: false },
+    { id: id(), name: 'Pudim', desc: 'Receita da casa.', price: 1600, emoji: '🍮', active: true },
+  ]},
+];
+const allItems = () => menu.flatMap(c => c.items);
+const findItem = pid => allItems().find(p => p.id === pid);
+
+// Tables: each has at most one open bill (session).
+const tables = Array.from({ length: 12 }, (_, i) => ({ id: 't' + (i + 1), label: 'Mesa ' + (i + 1), token: Math.random().toString(36).slice(2, 10), session: null }));
+const tableById = tid => tables.find(t => t.id === tid);
+let orders = [];
+let orderSeq = 0;
+let bills = [];
+
+function openSession(t) {
+  if (!t.session) t.session = { id: id(), openedAt: now(), waiterAt: null, checkAt: null };
+  return t.session;
+}
+function addOrder(t, lines, notes, minutesAgo = 0, status = 'SUBMITTED') {
+  const s = openSession(t);
+  if (minutesAgo) s.openedAt = Math.min(s.openedAt, now() - minutesAgo * MIN);
+  const items = lines.map(([p, qty, n]) => ({ name: p.name, price: p.price, qty, notes: n || '' }));
+  const o = { id: id(), code: String(++orderSeq), tableId: t.id, sessionId: s.id, status, notes: notes || '', items,
+    total: items.reduce((a, i) => a + i.price * i.qty, 0), createdAt: now() - minutesAgo * MIN, updatedAt: now() - minutesAgo * MIN };
+  orders.push(o);
+  return o;
+}
+const sessionOrders = t => t.session ? orders.filter(o => o.sessionId === t.session.id) : [];
+const sessionTotal = t => sessionOrders(t).filter(o => o.status !== 'CANCELLED').reduce((a, o) => a + o.total, 0);
+
+// Starts empty on purpose: tables, kitchen and cash only fill up as orders
+// are placed during the live demo.
+
+// ---------------- helpers ----------------
+const $ = s => document.querySelector(s);
+const money = c => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const time = ts => new Date(ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+const mins = ts => Math.max(0, Math.floor((now() - ts) / MIN));
+const ago = ts => mins(ts) === 0 ? 'agora' : 'há ' + mins(ts) + ' min';
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2800);
+}
+function setUrl(role) {
+  try { const u = new URL(location.href); role ? u.searchParams.set('role', role) : u.searchParams.delete('role'); history.replaceState({}, '', u); } catch (e) { /* sandboxed */ }
+}
+
+// ---------------- roles, tabs, rendering ----------------
+const TABS = {
+  customer: [['customer', 'Celular do cliente']],
+  owner: [['mesas', 'Mesas'], ['cozinha', 'Cozinha'], ['cardapio', 'Cardápio'], ['qrcodes', 'QR Codes'], ['caixa', 'Caixa'], ['ajustes', 'Ajustes']],
+};
+let role = null, view = 'landing';
+
+function selectRole(r) { role = r; setUrl(r); $('#switch-role').style.display = ''; show(TABS[r][0][0]); }
+function show(v) {
+  view = v;
+  document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === 'view-' + v));
+  render();
+}
+function render() {
+  const picker = $('#table-picker');
+  picker.style.display = role === 'customer' ? 'flex' : 'none';
+  if (role === 'customer') {
+    $('#table-select').innerHTML = tables.map(t => `<option value="${t.id}" ${t.id === cust.tableId ? 'selected' : ''}>${t.label}</option>`).join('');
+  }
+  if (role) {
+    const alerts = tables.filter(t => t.session && (t.session.waiterAt || t.session.checkAt)).length;
+    const newOrders = orders.filter(o => o.status === 'SUBMITTED').length;
+    $('#tabs').innerHTML = TABS[role].map(([v, label]) => {
+      let extra = '';
+      if (v === 'mesas' && alerts) extra = ` <span class="tab-alert">🔔${alerts}</span>`;
+      if (v === 'cozinha' && newOrders) extra = ` <span class="tab-alert">${newOrders} novo${newOrders > 1 ? 's' : ''}</span>`;
+      return `<button data-view="${v}" class="${v === view ? 'active' : ''}">${label}${extra}</button>`;
+    }).join('');
+  } else {
+    $('#tabs').innerHTML = '';
+  }
+  const fn = { customer: renderCustomer, mesas: renderMesas, cozinha: renderCozinha, cardapio: renderCardapio, qrcodes: renderQr, caixa: renderCaixa, ajustes: renderAjustes }[view];
+  if (fn) fn();
+}
+function changed() { render(); renderModal(); }
+
+document.querySelectorAll('.role').forEach(b => b.addEventListener('click', () => selectRole(b.dataset.role)));
+$('#switch-role').addEventListener('click', () => { role = null; setUrl(null); $('#switch-role').style.display = 'none'; closeModal(); show('landing'); });
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) show(b.dataset.view); });
+
+// One generic click dispatcher: elements carry data-act="name" and data-arg.
+const ACTIONS = {};
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const fn = ACTIONS[el.dataset.act];
+  if (fn) { e.stopPropagation(); fn(el.dataset.arg, el, e); }
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'table-select') { cust.tableId = e.target.value; cust.cart = []; cust.notes = ''; cust.tab = 'menu'; cust.sheet = null; cust.cartOpen = false; render(); }
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'c-search') { cust.query = e.target.value; renderCustomerMenuList(); }
+});
+
+// =========================================================================
+// CUSTOMER (customer-pwa)
+// =========================================================================
+const cust = { tableId: 't12', tab: 'menu', query: '', cart: [], notes: '', sheet: null, qty: 1, itemNotes: '', cartOpen: false };
+const custTable = () => tableById(cust.tableId);
+const cartCount = () => cust.cart.reduce((a, l) => a + l.qty, 0);
+const cartTotal = () => cust.cart.reduce((a, l) => a + l.qty * findItem(l.pid).price, 0);
+
+function renderCustomer() {
+  const t = custTable();
+  $('#phone').innerHTML = `
+    <div class="phone-scroll" id="phone-scroll">
+      <div class="c-head">
+        <div><h1>${esc(store.name)}</h1><span class="muted">${esc(t.label)}</span></div>
+        <button class="small" data-act="callWaiter" ${t.session && t.session.waiterAt ? 'disabled' : ''}>🙋 Chamar garçom</button>
+      </div>
+      <div class="c-tabs">
+        <button class="${cust.tab === 'menu' ? 'active' : ''}" data-act="custTab" data-arg="menu">Cardápio</button>
+        <button class="${cust.tab === 'orders' ? 'active' : ''}" data-act="custTab" data-arg="orders">Meus pedidos</button>
+      </div>
+      <div id="c-body"></div>
+    </div>
+    <div id="c-overlay"></div>`;
+  cust.tab === 'menu' ? renderCustomerMenu() : renderCustomerOrders();
+  renderCustomerOverlay();
+}
+
+function renderCustomerMenu() {
+  $('#c-body').innerHTML = `
+    ${store.orderingEnabled ? '' : '<div class="notice">Os pedidos pelo celular estão pausados agora. Chame o garçom para pedir.</div>'}
+    <div class="tools">
+      <input id="c-search" type="search" placeholder="Buscar no cardápio" value="${esc(cust.query)}" />
+      <div class="chips">${menu.filter(c => c.items.some(p => p.active)).map(c => `<button class="chip" data-act="scrollCat" data-arg="${c.id}">${esc(c.name)}</button>`).join('')}</div>
+    </div>
+    <div id="c-list"></div>
+    ${cartCount() ? '' : '<div class="demo-hint">Dica da demo: toque num item para adicionar. Itens esgotados (marcados pelo dono) não aparecem.</div>'}`;
+  renderCustomerMenuList();
+}
+
+function renderCustomerMenuList() {
+  const q = cust.query.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  const match = p => !q || (p.name + ' ' + p.desc).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().includes(q);
+  const html = menu.map(c => {
+    const items = c.items.filter(p => p.active && match(p));
+    if (!items.length) return '';
+    return `<h3 class="cat-title" id="cat-${c.id}">${esc(c.name)}</h3>` + items.map(p => {
+      const inCart = cust.cart.filter(l => l.pid === p.id).reduce((a, l) => a + l.qty, 0);
+      return `<button class="product" data-act="openItem" data-arg="${p.id}" ${store.orderingEnabled ? '' : 'disabled style="opacity:1"'}>
+        <div class="info"><strong>${esc(p.name)}</strong>${p.desc ? `<span class="desc">${esc(p.desc)}</span>` : ''}<span><b>${money(p.price)}</b></span></div>
+        <div class="thumb">${p.emoji}</div>
+        ${inCart ? `<span class="badge accent qty-badge">${inCart}</span>` : ''}
+      </button>`;
+    }).join('');
+  }).join('');
+  $('#c-list').innerHTML = html || '<p class="muted" style="text-align:center">Nenhum item encontrado.</p>';
+}
+
+function renderCustomerOrders() {
+  const t = custTable();
+  const list = sessionOrders(t).slice().reverse();
+  $('#c-body').innerHTML = !list.length ? `
+      <div style="text-align:center;padding:40px 0"><p class="muted">Você ainda não fez pedidos nesta mesa.</p>
+      <button class="ghost" data-act="custTab" data-arg="menu">Ver o cardápio</button></div>` : `
+    ${list.map(o => `
+      <div class="card order-card">
+        <div class="row"><strong>Pedido #${o.code}</strong><span class="muted">${time(o.createdAt)}</span><span class="spacer"></span><span class="badge ${STATUS_BADGE[o.status]}">${STATUS[o.status]}</span></div>
+        ${o.items.map(i => `<div class="item-line"><span>${i.qty}× ${esc(i.name)}${i.notes ? ` <em class="muted">— ${esc(i.notes)}</em>` : ''}</span><span>${money(i.price * i.qty)}</span></div>`).join('')}
+        ${o.notes ? `<div class="muted small">Obs.: ${esc(o.notes)}</div>` : ''}
+      </div>`).join('')}
+    <div class="card" style="margin-top:14px;display:grid;gap:12px">
+      <div class="row"><span>Total da mesa</span><span class="spacer"></span><strong style="font-size:18px">${money(sessionTotal(t))}</strong></div>
+      ${t.session.checkAt
+        ? '<div><b>✅ Conta solicitada.</b> O garçom já vem com a maquininha.</div>'
+        : '<button class="primary" style="padding:14px" data-act="requestCheck">💳 Pedir a conta</button>'}
+      <div class="muted small" style="text-align:center">Pagamento com o garçom: cartão, Pix ou dinheiro.</div>
+    </div>
+    <div class="demo-hint">Dica da demo: o status muda quando a cozinha avança o pedido. Troque para "Sou dono" → Cozinha e toque em "Começar preparo".</div>`;
+}
+
+function renderCustomerOverlay() {
+  const ov = $('#c-overlay');
+  if (!ov) return;
+  if (cust.sheet) {
+    const p = findItem(cust.sheet);
+    ov.innerHTML = `<div class="backdrop" data-act="closeSheet"><div class="sheet" data-act="noop">
+      <div class="hero">${p.emoji}</div>
+      <h2 style="margin-top:12px">${esc(p.name)}</h2>
+      ${p.desc ? `<p class="muted">${esc(p.desc)}</p>` : ''}
+      <label>Observação (opcional)<textarea id="item-notes" rows="2" maxlength="200" placeholder="Ex.: sem cebola, ponto da carne…">${esc(cust.itemNotes)}</textarea></label>
+      <div class="row" style="margin-top:16px;flex-wrap:nowrap">
+        <div class="stepper"><button data-act="sheetQty" data-arg="-1" ${cust.qty <= 1 ? 'disabled' : ''}>−</button><span>${cust.qty}</span><button data-act="sheetQty" data-arg="1">+</button></div>
+        <button class="primary" style="flex:1" data-act="addToCart">Adicionar · ${money(p.price * cust.qty)}</button>
+      </div></div></div>`;
+  } else if (cust.cartOpen) {
+    ov.innerHTML = `<div class="backdrop" data-act="closeCart"><div class="sheet" data-act="noop">
+      <div class="row"><h2>Seu pedido</h2><span class="spacer"></span><button class="ghost small" data-act="closeCart">Fechar</button></div>
+      ${cust.cart.map((l, i) => { const p = findItem(l.pid); return `<div class="cart-line">
+        <div style="flex:1"><strong>${esc(p.name)}</strong>${l.notes ? `<div class="muted small">Obs.: ${esc(l.notes)}</div>` : ''}<div class="muted small">${money(p.price)} cada</div></div>
+        <div class="stepper"><button data-act="cartQty" data-arg="${i}:-1">${l.qty === 1 ? '🗑' : '−'}</button><span>${l.qty}</span><button data-act="cartQty" data-arg="${i}:1">+</button></div>
+      </div>`; }).join('')}
+      <label>Observação para o pedido (opcional)<textarea id="order-notes" rows="2" maxlength="200">${esc(cust.notes)}</textarea></label>
+      <button class="primary wide" data-act="sendOrder" ${cartCount() ? '' : 'disabled'}>Enviar pedido · ${money(cartTotal())}</button>
+      <p class="muted small" style="text-align:center">O pedido vai direto para a cozinha. Você paga no final, com o garçom.</p>
+    </div></div>`;
+  } else if (cartCount() && cust.tab === 'menu') {
+    ov.innerHTML = `<button class="primary cart-bar" data-act="openCart"><span>Ver carrinho · ${cartCount()} ${cartCount() === 1 ? 'item' : 'itens'}</span><strong>${money(cartTotal())}</strong></button>`;
+  } else {
+    ov.innerHTML = '';
+  }
+}
+
+Object.assign(ACTIONS, {
+  noop() {},
+  custTab(tab) { cust.tab = tab; renderCustomer(); },
+  scrollCat(cid) { const el = document.getElementById('cat-' + cid); if (el) $('#phone-scroll').scrollTo({ top: el.offsetTop - 110, behavior: 'smooth' }); },
+  openItem(pid) { cust.sheet = pid; cust.qty = 1; cust.itemNotes = ''; renderCustomerOverlay(); },
+  closeSheet() { cust.sheet = null; renderCustomerOverlay(); },
+  sheetQty(d) { cust.itemNotes = $('#item-notes').value; cust.qty = Math.max(1, Math.min(50, cust.qty + Number(d))); renderCustomerOverlay(); },
+  addToCart() {
+    const notes = $('#item-notes').value.trim();
+    const same = cust.cart.find(l => l.pid === cust.sheet && l.notes === notes);
+    same ? same.qty += cust.qty : cust.cart.push({ pid: cust.sheet, qty: cust.qty, notes });
+    toast(findItem(cust.sheet).name + ' adicionado');
+    cust.sheet = null; renderCustomer();
+  },
+  openCart() { cust.cartOpen = true; renderCustomerOverlay(); },
+  closeCart() { saveOrderNotes(); cust.cartOpen = false; renderCustomer(); },
+  cartQty(arg) {
+    saveOrderNotes();
+    const [i, d] = arg.split(':').map(Number);
+    cust.cart[i].qty += d;
+    if (cust.cart[i].qty <= 0) cust.cart.splice(i, 1);
+    if (!cust.cart.length) cust.cartOpen = false;
+    renderCustomer();
+  },
+  sendOrder() {
+    saveOrderNotes();
+    if (!store.orderingEnabled) { toast('Pedidos pausados pelo restaurante'); return; }
+    const o = addOrder(custTable(), cust.cart.map(l => [findItem(l.pid), l.qty, l.notes]), cust.notes);
+    cust.cart = []; cust.notes = ''; cust.cartOpen = false; cust.tab = 'orders';
+    toast(`Pedido #${o.code} enviado para a cozinha! 🎉`);
+    changed();
+  },
+  callWaiter() { openSession(custTable()).waiterAt = now(); toast('Pronto! Um garçom já vem até a mesa.'); changed(); },
+  requestCheck() { openSession(custTable()).checkAt = now(); toast('Conta solicitada!'); changed(); },
+});
+function saveOrderNotes() { const el = $('#order-notes'); if (el) cust.notes = el.value; }
+
+// =========================================================================
+// OWNER: Mesas (operations-pwa)
+// =========================================================================
+const ops = { selected: null };
+
+function renderMesas() {
+  const open = tables.filter(t => t.session);
+  const alerts = tables.filter(t => t.session && (t.session.waiterAt || t.session.checkAt));
+  $('#view-mesas').innerHTML = `
+    <div class="row"><h1>Mesas</h1><span class="badge ok">Ao vivo</span><span class="spacer"></span>
+      <span class="muted">${open.length} abertas · ${money(open.reduce((a, t) => a + sessionTotal(t), 0))} em aberto</span></div>
+    ${alerts.length ? `<div class="alerts">${alerts.map(t => `<button class="alert" data-act="selectTable" data-arg="${t.id}">
+      <strong>${t.label}</strong>
+      ${t.session.waiterAt ? `<span class="badge warn">🙋 chamou o garçom · ${ago(t.session.waiterAt)}</span>` : ''}
+      ${t.session.checkAt ? `<span class="badge accent">💳 pediu a conta · ${ago(t.session.checkAt)}</span>` : ''}
+    </button>`).join('')}</div>` : ''}
+    ${open.length ? '' : '<div class="demo-hint" style="margin-top:12px">Todas as mesas estão livres. Faça um pedido em "Sou cliente" (ou em QR Codes → Testar) e veja a mesa abrir aqui com o total.</div>'}
+    <div class="grid">${tables.map(t => {
+      const s = t.session, pending = sessionOrders(t).filter(o => ['SUBMITTED', 'IN_PREPARATION'].includes(o.status)).length;
+      return `<button class="table ${s ? 'open' : ''} ${s && (s.waiterAt || s.checkAt) ? 'flag' : ''}" data-act="selectTable" data-arg="${t.id}">
+        <div class="row"><strong>${t.label}</strong><span class="spacer"></span>${s && s.waiterAt ? '🙋' : ''}${s && s.checkAt ? '💳' : ''}</div>
+        ${s ? `<div class="total">${money(sessionTotal(t))}</div>
+          <div class="muted small">${sessionOrders(t).filter(o => o.status !== 'CANCELLED').length} pedido(s) · desde ${time(s.openedAt)}</div>
+          ${pending ? `<span class="badge warn">${pending} na cozinha</span>` : ''}` : '<div class="muted">Livre</div>'}
+      </button>`;
+    }).join('')}</div>`;
+}
+
+function renderModal() {
+  const root = $('#modal-root');
+  if (role === 'owner' && ops.selected) {
+    const t = tableById(ops.selected), s = t.session;
+    root.innerHTML = `<div class="backdrop fixed" data-act="closeTable"><div class="sheet" data-act="noop">
+      <div class="row"><h2>${t.label}</h2><span class="spacer"></span><button class="ghost small" data-act="closeTable">Fechar</button></div>
+      ${!s ? '<p class="muted">Mesa livre. Quando o cliente fizer o primeiro pedido pelo QR Code, a conta abre aqui.</p>' : `
+        <div class="row" style="margin:10px 0">
+          ${s.waiterAt ? '<button data-act="ack" data-arg="waiter">✔ Garçom atendeu</button>' : ''}
+          ${s.checkAt ? '<button data-act="ack" data-arg="check">✔ Conta levada à mesa</button>' : ''}
+        </div>
+        ${sessionOrders(t).map(o => `<div class="o-row ${o.status === 'CANCELLED' ? 'cancelled' : ''}">
+          <div class="row"><strong>#${o.code}</strong><span class="muted">${time(o.createdAt)}</span><span class="badge">${STATUS[o.status]}</span><span class="spacer"></span><strong>${money(o.total)}</strong></div>
+          ${o.items.map(i => `<div class="muted small">${i.qty}× ${esc(i.name)}${i.notes ? ' — ' + esc(i.notes) : ''}</div>`).join('')}
+          ${o.notes ? `<div class="muted small">Obs.: ${esc(o.notes)}</div>` : ''}
+          ${!['CANCELLED', 'SERVED'].includes(o.status) ? `<button class="danger small" style="justify-self:start;margin-top:4px" data-act="cancelOrder" data-arg="${o.id}">Cancelar pedido</button>` : ''}
+        </div>`).join('') || '<p class="muted">Sem pedidos ainda.</p>'}
+        <div class="card close-box">
+          <div class="row"><span>Total da conta</span><span class="spacer"></span><strong style="font-size:22px">${money(sessionTotal(t))}</strong></div>
+          <div class="muted small">Cobre na maquininha ou no Pix do restaurante e, quando o cliente pagar, feche a conta. A mesa fica livre para o próximo cliente.</div>
+          <button class="primary" style="padding:14px" data-act="closeBill">✔ Conta paga — fechar mesa</button>
+        </div>`}
+    </div></div>`;
+  } else if (role === 'owner' && edit.item !== undefined) {
+    renderEditModal(root);
+  } else {
+    root.innerHTML = '';
+  }
+}
+function closeModal() { ops.selected = null; edit.item = undefined; $('#modal-root').innerHTML = ''; }
+
+Object.assign(ACTIONS, {
+  selectTable(tid) { ops.selected = tid; renderModal(); },
+  closeTable() { ops.selected = null; renderModal(); },
+  ack(kind) { const s = tableById(ops.selected).session; kind === 'waiter' ? s.waiterAt = null : s.checkAt = null; changed(); },
+  cancelOrder(oid) { const o = orders.find(x => x.id === oid); o.status = 'CANCELLED'; o.updatedAt = now(); toast(`Pedido #${o.code} cancelado`); changed(); },
+  closeBill() {
+    const t = tableById(ops.selected), total = sessionTotal(t);
+    if (total > 0) bills.unshift({ id: id(), table: t.label, openedAt: t.session.openedAt, paidAt: now(), total });
+    sessionOrders(t).forEach(o => { if (['SUBMITTED', 'IN_PREPARATION', 'READY'].includes(o.status)) { o.status = 'SERVED'; o.updatedAt = now(); } });
+    t.session = null; ops.selected = null;
+    toast(`${t.label}: conta fechada (${money(total)})`);
+    changed();
+  },
+});
+
+// =========================================================================
+// OWNER: Cozinha (kds-pwa)
+// =========================================================================
+const COLUMNS = [
+  { status: 'SUBMITTED', title: 'Novos', next: 'IN_PREPARATION', label: 'Começar preparo' },
+  { status: 'IN_PREPARATION', title: 'Em preparo', next: 'READY', label: 'Pronto', back: 'SUBMITTED' },
+  { status: 'READY', title: 'Prontos para servir', next: 'SERVED', label: 'Entregue', back: 'IN_PREPARATION' },
+];
+function renderCozinha() {
+  const recent = orders.filter(o => ['SERVED', 'CANCELLED'].includes(o.status) && now() - o.updatedAt < 30 * MIN).sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 8);
+  $('#view-cozinha').innerHTML = `
+    <div class="row"><h1>Cozinha</h1><span class="badge ok">Ao vivo</span><span class="spacer"></span><span class="muted small">Na cozinha fica num tablet, em tela cheia, com som a cada pedido novo.</span></div>
+    ${orders.some(o => ['SUBMITTED', 'IN_PREPARATION', 'READY'].includes(o.status)) ? '' : '<div class="demo-hint" style="margin-top:12px">Nenhum pedido na cozinha ainda. Os pedidos feitos pelo celular do cliente aparecem aqui na hora.</div>'}
+    <div class="kds">${COLUMNS.map(col => {
+      const list = orders.filter(o => o.status === col.status).sort((a, b) => a.createdAt - b.createdAt);
+      return `<div class="col"><h2>${col.title} <span class="count">${list.length}</span></h2>
+        ${list.map(o => { const m = mins(o.createdAt); return `<div class="ticket ${m >= 20 ? 'late' : m >= 10 ? 'warn' : ''}">
+          <div class="row"><span class="code">#${o.code}</span><strong>${tableById(o.tableId).label}</strong><span class="spacer"></span><span class="muted">${m} min</span></div>
+          <ul>${o.items.map(i => `<li><b>${i.qty}×</b> ${esc(i.name)}${i.notes ? `<div class="note">⚠ ${esc(i.notes)}</div>` : ''}</li>`).join('')}</ul>
+          ${o.notes ? `<div class="note">Obs. do pedido: ${esc(o.notes)}</div>` : ''}
+          <div class="row" style="flex-wrap:nowrap">
+            ${col.back ? `<button class="ghost small" data-act="moveOrder" data-arg="${o.id}:${col.back}" title="Voltar">↩</button>` : ''}
+            <button class="primary" style="flex:1" data-act="moveOrder" data-arg="${o.id}:${col.next}">${col.label}</button>
+          </div></div>`; }).join('') || '<p class="muted" style="text-align:center">—</p>'}
+      </div>`;
+    }).join('')}</div>
+    ${recent.length ? `<div class="recent"><span class="muted">Recentes:</span>${recent.map(o => `<button class="ghost small" ${o.status === 'SERVED' ? `data-act="moveOrder" data-arg="${o.id}:READY"` : 'disabled'}>#${o.code} ${tableById(o.tableId).label} · ${STATUS[o.status]} ${time(o.updatedAt)}</button>`).join('')}</div>` : ''}`;
+}
+ACTIONS.moveOrder = arg => { const [oid, st] = arg.split(':'); const o = orders.find(x => x.id === oid); o.status = st; o.updatedAt = now(); changed(); };
+
+// =========================================================================
+// OWNER: Cardápio
+// =========================================================================
+const edit = { item: undefined, cat: null };
+function renderCardapio() {
+  $('#view-cardapio').innerHTML = `
+    <div class="row"><h1>Cardápio</h1><span class="spacer"></span>
+      <button data-act="newCategory">+ Categoria</button><button class="primary" data-act="editItem" data-arg="">+ Item</button></div>
+    <p class="muted small">Mudou aqui, muda na hora no celular do cliente. "Esgotado" esconde o item até você voltar a vender.</p>
+    ${menu.map(c => `<div class="card m-cat"><h2>${esc(c.name)}</h2>
+      ${c.items.map(p => `<div class="m-item ${p.active ? '' : 'soldout'}">
+        <div class="thumb">${p.emoji}</div>
+        <div class="info"><strong>${esc(p.name)}</strong><span class="muted small">${esc(p.desc)}</span></div>
+        <strong class="price">${money(p.price)}</strong>
+        <button class="small ${p.active ? 'danger' : ''}" data-act="toggleItem" data-arg="${p.id}">${p.active ? 'Marcar esgotado' : 'Voltar a vender'}</button>
+        <button class="small" data-act="editItem" data-arg="${p.id}">Editar</button>
+      </div>`).join('') || '<p class="muted small">Nenhum item nesta categoria.</p>'}
+    </div>`).join('')}`;
+}
+function renderEditModal(root) {
+  const p = edit.item ? findItem(edit.item) : null;
+  const catId = p ? menu.find(c => c.items.includes(p)).id : menu[0].id;
+  root.innerHTML = `<div class="backdrop fixed" data-act="closeEdit"><div class="sheet" data-act="noop">
+    <h2>${p ? 'Editar item' : 'Novo item'}</h2>
+    <label>Nome<input id="e-name" value="${p ? esc(p.name) : ''}" /></label>
+    <label>Descrição<textarea id="e-desc" rows="3">${p ? esc(p.desc) : ''}</textarea></label>
+    <div class="row" style="align-items:end"><label style="flex:1">Preço (R$)<input id="e-price" inputmode="decimal" placeholder="0,00" value="${p ? (p.price / 100).toFixed(2).replace('.', ',') : ''}" /></label>
+      <label style="flex:1">Categoria<select id="e-cat">${menu.map(c => `<option value="${c.id}" ${c.id === catId ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label></div>
+    <p class="muted small">No sistema real você também envia a foto do prato (o celular reduz o tamanho antes de enviar).</p>
+    <div class="row" style="margin-top:14px">${p ? '<button class="danger" data-act="deleteItem">Excluir item</button>' : ''}<span class="spacer"></span>
+      <button class="ghost" data-act="closeEdit">Cancelar</button><button class="primary" data-act="saveItem">Salvar</button></div>
+  </div></div>`;
+}
+Object.assign(ACTIONS, {
+  toggleItem(pid) { const p = findItem(pid); p.active = !p.active; toast(p.active ? `${p.name} voltou ao cardápio` : `${p.name} marcado como esgotado`); changed(); },
+  editItem(pid) { edit.item = pid || null; renderModal(); },
+  closeEdit() { edit.item = undefined; renderModal(); },
+  saveItem() {
+    const name = $('#e-name').value.trim(), desc = $('#e-desc').value.trim();
+    const clean = $('#e-price').value.replace(/[^\d,.]/g, '');
+    const price = Math.round(Number(clean.includes(',') ? clean.replace(/\./g, '').replace(',', '.') : clean) * 100);
+    if (!name || !clean || !Number.isFinite(price)) { toast('Preencha nome e preço (ex.: 12,90)'); return; }
+    const cat = menu.find(c => c.id === $('#e-cat').value);
+    let p = edit.item ? findItem(edit.item) : null;
+    if (p) { menu.forEach(c => c.items = c.items.filter(x => x !== p)); Object.assign(p, { name, desc, price }); }
+    else p = { id: id(), name, desc, price, emoji: '🍽️', active: true };
+    cat.items.push(p);
+    edit.item = undefined; toast('Item salvo'); changed();
+  },
+  deleteItem() { const p = findItem(edit.item); menu.forEach(c => c.items = c.items.filter(x => x !== p)); edit.item = undefined; toast('Item excluído'); changed(); },
+  newCategory(_, btn) {
+    const name = 'Nova categoria ' + (menu.length + 1);
+    menu.push({ id: id(), name, items: [] }); toast(`"${name}" criada (no sistema real você digita o nome)`); changed();
+  },
+});
+
+// =========================================================================
+// OWNER: QR Codes (illustrative pattern; the real app draws a scannable QR)
+// =========================================================================
+function fakeQr(seed) {
+  let h = 0; for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const rnd = () => (h = (h * 1103515245 + 12345) >>> 0) / 4294967296;
+  const n = 25, cell = 6; let r = '';
+  const finder = (x, y) => `<rect x="${x * cell}" y="${y * cell}" width="${7 * cell}" height="${7 * cell}" fill="#111"/><rect x="${(x + 1) * cell}" y="${(y + 1) * cell}" width="${5 * cell}" height="${5 * cell}" fill="#fff"/><rect x="${(x + 2) * cell}" y="${(y + 2) * cell}" width="${3 * cell}" height="${3 * cell}" fill="#111"/>`;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const inFinder = (x < 8 && y < 8) || (x > n - 9 && y < 8) || (x < 8 && y > n - 9);
+    if (!inFinder && rnd() > 0.52) r += `<rect x="${x * cell}" y="${y * cell}" width="${cell}" height="${cell}" fill="#111"/>`;
+  }
+  return `<svg viewBox="-6 -6 ${n * cell + 12} ${n * cell + 12}" width="160" height="160"><rect x="-6" y="-6" width="${n * cell + 12}" height="${n * cell + 12}" fill="#fff"/>${r}${finder(0, 0)}${finder(n - 7, 0)}${finder(0, n - 7)}</svg>`;
+}
+function renderQr() {
+  $('#view-qrcodes').innerHTML = `
+    <div class="row"><h1>Mesas e QR Codes</h1><span class="spacer"></span><button data-act="addTable">+ Mesa</button>
+      <button class="primary" data-act="printQr">🖨 Imprimir QR Codes</button></div>
+    <p class="muted small">Imprima, recorte e cole um QR Code em cada mesa. Cada código é único e pode ser trocado se vazar. <b>Testar</b> abre o celular do cliente naquela mesa.</p>
+    <div class="qr-grid">${tables.map(t => `<div class="qr-card">
+      <div class="small" style="color:#555;font-weight:700">${esc(store.name)}</div>
+      <div class="lbl">${t.label}</div>${fakeQr(t.token)}
+      <div class="hint">Aponte a câmera do celular<br />para ver o cardápio e pedir</div>
+      <div class="row" style="justify-content:center"><button class="small" data-act="testTable" data-arg="${t.id}">Testar</button><button class="small" data-act="rotateQr" data-arg="${t.id}">Novo código</button></div>
+    </div>`).join('')}</div>
+    <p class="muted small">Na demonstração os QR Codes são ilustrativos; no sistema real eles abrem o cardápio da mesa.</p>`;
+}
+Object.assign(ACTIONS, {
+  addTable() { const n = tables.length + 1; tables.push({ id: 't' + n, label: 'Mesa ' + n, token: Math.random().toString(36).slice(2, 10), session: null }); changed(); },
+  rotateQr(tid) { tableById(tid).token = Math.random().toString(36).slice(2, 10); toast('Novo código gerado; o QR impresso antigo deixa de funcionar'); changed(); },
+  testTable(tid) { cust.tableId = tid; cust.tab = 'menu'; cust.cart = []; selectRole('customer'); },
+  printQr() { try { window.print(); } catch (e) { /* blocked in some viewers */ } toast('No sistema real, abre a impressão com todos os QR Codes'); },
+});
+
+// =========================================================================
+// OWNER: Caixa
+// =========================================================================
+function renderCaixa() {
+  const total = bills.reduce((a, b) => a + b.total, 0);
+  const today = orders.filter(o => o.status !== 'CANCELLED').length;
+  $('#view-caixa').innerHTML = `
+    <div class="row"><h1>Caixa de hoje</h1><span class="spacer"></span><span class="muted">${new Date().toLocaleDateString('pt-BR')}</span></div>
+    <div class="kpis">
+      <div class="card"><span class="muted">Recebido</span><strong>${money(total)}</strong></div>
+      <div class="card"><span class="muted">Contas fechadas</span><strong>${bills.length}</strong></div>
+      <div class="card"><span class="muted">Ticket médio</span><strong>${money(bills.length ? Math.round(total / bills.length) : 0)}</strong></div>
+      <div class="card"><span class="muted">Pedidos pelo QR</span><strong>${today}</strong></div>
+    </div>
+    <div class="card"><h2 style="margin-bottom:6px">Contas</h2>
+      ${bills.slice().sort((a, b) => b.paidAt - a.paidAt).map(b => `<div class="row line"><strong>${b.table}</strong><span class="muted">${time(b.openedAt)}–${time(b.paidAt)}</span>
+        <span class="spacer"></span><strong>${money(b.total)}</strong></div>`).join('') || '<p class="muted small">Nenhuma conta fechada ainda.</p>'}</div>
+    <p class="muted small">Feche uma conta em Mesas e ela aparece aqui na hora.</p>`;
+}
+
+// =========================================================================
+// OWNER: Ajustes
+// =========================================================================
+function renderAjustes() {
+  $('#view-ajustes').innerHTML = `<h1>Ajustes</h1>
+    <div class="card" style="margin-top:12px;display:grid;gap:12px;max-width:720px">
+      <h2>Restaurante</h2>
+      <div class="row"><span>Pedidos pelo QR Code</span><span class="spacer"></span>
+        <button class="${store.orderingEnabled ? 'danger' : 'primary'}" data-act="toggleOrdering">${store.orderingEnabled ? 'Pausar pedidos' : 'Voltar a aceitar pedidos'}</button></div>
+      <p class="muted small" style="margin:0">Pause quando a cozinha lotar: o cliente continua vendo o cardápio, mas é orientado a chamar o garçom.</p>
+      <p class="muted small" style="margin:0">Link do cardápio para Instagram e Google (só visualização): <b>seu-dominio.com.br/r/seu-restaurante</b></p>
+    </div>
+    <div class="card" style="margin-top:12px;display:grid;gap:4px;max-width:720px">
+      <h2 style="margin-bottom:6px">Logins</h2>
+      <p class="muted small" style="margin:0 0 6px"><b>Dono</b> acessa tudo. <b>Equipe</b> é um login só, compartilhado por garçons e cozinha: vê Mesas, Cozinha e marca itens esgotados, mas não vê o Caixa nem muda preços.</p>
+      <div class="row line"><span class="badge accent">Dono</span><strong>Dono</strong><span class="muted">dono@seurestaurante.com.br</span><span class="spacer"></span><button class="small" data-act="demoPassword" data-arg="Dono">Trocar senha</button></div>
+      <div class="row line"><span class="badge">Equipe</span><strong>Equipe</strong><span class="muted">equipe@seurestaurante.com.br</span><span class="spacer"></span><button class="small" data-act="demoPassword" data-arg="Equipe">Trocar senha</button></div>
+      <p class="muted small" style="margin:6px 0 0">Alguém saiu da equipe? Troque a senha da Equipe: todos os celulares e tablets saem na hora e você passa a senha nova para quem ficou.</p>
+    </div>`;
+}
+ACTIONS.demoPassword = who => toast(`Senha de ${who} trocada: todos os aparelhos com esse login saíram`);
+ACTIONS.toggleOrdering = () => { store.orderingEnabled = !store.orderingEnabled; toast(store.orderingEnabled ? 'Pedidos pelo QR liberados' : 'Pedidos pelo QR pausados'); changed(); };
+
+// ---------------- init ----------------
+const initial = new URLSearchParams(location.search).get('role');
+if (initial === 'customer' || initial === 'owner') selectRole(initial);
+setInterval(() => { if (view === 'cozinha' || view === 'mesas') render(); }, 30000); // refresh elapsed minutes
+</script>
+</body>
+</html>
