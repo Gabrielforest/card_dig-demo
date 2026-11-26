@@ -109,6 +109,8 @@
   .kds { display: grid; grid-template-columns: repeat(3, minmax(240px, 1fr)); gap: 12px; margin-top: 12px; }
   .col { display: flex; flex-direction: column; gap: 10px; }
   .col h2 { display: flex; gap: 8px; align-items: center; }
+  .lane { display: flex; flex-direction: column; gap: 10px; }
+  .empty-lane { text-align: center; margin: 4px 0; }
   .count { background: var(--panel-2); border-radius: 999px; padding: 0 10px; font-size: 14px; }
   .ticket { background: var(--panel); border: 1px solid var(--border); border-left: 6px solid var(--ok); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; }
   .ticket.warn { border-left-color: var(--warn); } .ticket.late { border-left-color: var(--danger); }
@@ -168,8 +170,12 @@
     input, select, textarea { font-size: 16px; }
     .grid { grid-template-columns: repeat(2, 1fr); }
     .kpis { grid-template-columns: repeat(2, 1fr); }
-    .kds { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 84vw; overflow-x: auto; scroll-snap-type: x mandatory; }
-    .col { scroll-snap-align: start; }
+    .kds { grid-template-columns: 1fr; gap: 18px; }
+    .col h2 { font-size: 16px; }
+    .lane { flex-direction: row; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 -12px; padding: 2px 12px 6px; scroll-padding: 12px; }
+    .lane::-webkit-scrollbar { display: none; }
+    .lane .ticket { flex: 0 0 78vw; max-width: 320px; scroll-snap-align: start; align-content: start; }
+    .empty-lane { text-align: left; font-size: 14px; }
   }
 </style>
 </head>
@@ -596,7 +602,7 @@ function renderCozinha() {
     ${orders.some(o => ['SUBMITTED', 'IN_PREPARATION', 'READY'].includes(o.status)) ? '' : '<div class="demo-hint" style="margin-top:12px">Nenhum pedido na cozinha ainda. Os pedidos feitos pelo celular do cliente aparecem aqui na hora.</div>'}
     <div class="kds">${COLUMNS.map(col => {
       const list = orders.filter(o => o.status === col.status).sort((a, b) => a.createdAt - b.createdAt);
-      return `<div class="col"><h2>${col.title} <span class="count">${list.length}</span></h2>
+      return `<div class="col"><h2>${col.title} <span class="count">${list.length}</span></h2><div class="lane">
         ${list.map(o => { const m = mins(o.createdAt); return `<div class="ticket ${m >= 20 ? 'late' : m >= 10 ? 'warn' : ''}">
           <div class="row"><span class="code">#${o.code}</span><strong>${tableById(o.tableId).label}</strong><span class="spacer"></span><span class="muted">${m} min</span></div>
           <ul>${o.items.map(i => `<li><b>${i.qty}×</b> ${esc(i.name)}${i.notes ? `<div class="note">⚠ ${esc(i.notes)}</div>` : ''}</li>`).join('')}</ul>
@@ -604,8 +610,8 @@ function renderCozinha() {
           <div class="row" style="flex-wrap:nowrap">
             ${col.back ? `<button class="ghost small" data-act="moveOrder" data-arg="${o.id}:${col.back}" title="Voltar">↩</button>` : ''}
             <button class="primary" style="flex:1" data-act="moveOrder" data-arg="${o.id}:${col.next}">${col.label}</button>
-          </div></div>`; }).join('') || '<p class="muted" style="text-align:center">—</p>'}
-      </div>`;
+          </div></div>`; }).join('') || '<p class="muted empty-lane">Nenhum pedido</p>'}
+      </div></div>`;
     }).join('')}</div>
     ${recent.length ? `<div class="recent"><span class="muted">Recentes:</span>${recent.map(o => `<button class="ghost small" ${o.status === 'SERVED' ? `data-act="moveOrder" data-arg="${o.id}:READY"` : 'disabled'}>#${o.code} ${tableById(o.tableId).label} · ${STATUS[o.status]} ${time(o.updatedAt)}</button>`).join('')}</div>` : ''}`;
 }
