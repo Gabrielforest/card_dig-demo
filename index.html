@@ -81,9 +81,10 @@
 
   /* sheets */
   .backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.5); z-index: 20; display: flex; align-items: flex-end; }
-  .backdrop.fixed { position: fixed; align-items: center; justify-content: center; padding: 16px; }
+  .backdrop.fixed { position: fixed; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
   .sheet { background: var(--panel); color: var(--text); width: 100%; max-height: 88%; overflow-y: auto; border-radius: 18px 18px 0 0; padding: 18px; }
-  .backdrop.fixed .sheet { max-width: 560px; border-radius: 18px; border: 1px solid var(--border); max-height: 90vh; }
+  .backdrop.fixed .sheet { max-width: 560px; border-radius: 18px; border: 1px solid var(--border); max-height: 90vh; max-height: 90dvh; }
+  .sheet-head { position: sticky; top: -18px; z-index: 2; background: var(--panel); margin: -18px -18px 4px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
   .hero { height: 150px; border-radius: 12px; background: var(--panel-2); display: grid; place-items: center; font-size: 70px; }
   .stepper { display: flex; align-items: center; gap: 10px; }
   .stepper button { width: 38px; height: 38px; padding: 0; border-radius: 50%; }
@@ -137,12 +138,36 @@
 
   .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 700; z-index: 100; opacity: 0; transition: all .25s; pointer-events: none; }
   .toast.show { opacity: 1; transform: translateX(-50%); }
+  .sw-short { display: none; }
 
   @media (max-width: 760px) {
     .roles { grid-template-columns: 1fr; width: 100%; max-width: 340px; }
     .draft { display: none; }
-    .phone { border: none; border-radius: 0; box-shadow: none; margin: -16px; min-height: calc(100vh - 60px); }
-    .phone-scroll { height: calc(100vh - 60px); }
+    .phone { border: none; border-radius: 0; box-shadow: none; margin: -12px; min-height: calc(100dvh - var(--hdr, 56px)); }
+    .phone-scroll { height: calc(100dvh - var(--hdr, 56px)); }
+
+    /* compact header: one line for brand + actions, tabs scroll sideways */
+    header.topbar { padding: 8px 12px; gap: 8px; row-gap: 6px; }
+    .brand { font-size: 15px; }
+    .tabs { order: 10; flex: 1 0 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 0 12px 2px; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tabs button { white-space: nowrap; padding: 6px 10px; font-size: 14px; flex: none; }
+    body.role-customer .tabs { display: none; }
+    #table-picker .pick-lbl { display: none; }
+    #table-select { padding: 5px 8px !important; }
+    #switch-role { padding: 5px 9px; white-space: nowrap; }
+    .sw-long { display: none; } .sw-short { display: inline; }
+    .toast { bottom: auto; top: calc(var(--hdr, 56px) + 10px); transform: translateX(-50%) translateY(-20px); max-width: calc(100vw - 32px); text-align: center; }
+    main { padding: 12px; }
+    #view-landing.active { min-height: calc(100dvh - 90px); }
+
+    /* modals become bottom sheets */
+    .backdrop.fixed { align-items: flex-end; padding: 0; }
+    .backdrop.fixed .sheet { max-width: none; border-radius: 18px 18px 0 0; border: none; border-top: 1px solid var(--border); max-height: 92dvh; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+    .close-box { position: sticky; bottom: -18px; box-shadow: 0 -10px 20px rgba(0,0,0,.35); }
+    input, select, textarea { font-size: 16px; }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .kpis { grid-template-columns: repeat(2, 1fr); }
     .kds { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 84vw; overflow-x: auto; scroll-snap-type: x mandatory; }
     .col { scroll-snap-align: start; }
   }
@@ -154,9 +179,9 @@
   <div class="brand"><span class="dot"></span> Cardápio Digital</div>
   <nav class="tabs" id="tabs"></nav>
   <span class="spacer"></span>
-  <label id="table-picker" style="display:none;margin:0;flex-direction:row;align-items:center;gap:6px;color:var(--muted)">Mesa do cliente
+  <label id="table-picker" style="display:none;margin:0;flex-direction:row;align-items:center;gap:6px;color:var(--muted)"><span class="pick-lbl">Mesa do cliente</span>
     <select id="table-select" style="width:auto;padding:6px 10px"></select></label>
-  <button class="ghost small" id="switch-role" style="display:none">← Trocar visão</button>
+  <button class="ghost small" id="switch-role" style="display:none">← <span class="sw-long">Trocar visão</span><span class="sw-short">Voltar</span></button>
   <span class="draft">demonstração — dados fictícios</span>
 </header>
 
@@ -288,7 +313,10 @@ function show(v) {
   document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === 'view-' + v));
   render();
 }
+function syncHeader() { document.documentElement.style.setProperty('--hdr', document.querySelector('header.topbar').offsetHeight + 'px'); }
+window.addEventListener('resize', syncHeader);
 function render() {
+  document.body.classList.toggle('role-customer', role === 'customer');
   const picker = $('#table-picker');
   picker.style.display = role === 'customer' ? 'flex' : 'none';
   if (role === 'customer') {
@@ -308,6 +336,7 @@ function render() {
   }
   const fn = { customer: renderCustomer, mesas: renderMesas, cozinha: renderCozinha, cardapio: renderCardapio, qrcodes: renderQr, caixa: renderCaixa, ajustes: renderAjustes }[view];
   if (fn) fn();
+  syncHeader();
 }
 function changed() { render(); renderModal(); }
 
@@ -511,7 +540,7 @@ function renderModal() {
   if (role === 'owner' && ops.selected) {
     const t = tableById(ops.selected), s = t.session;
     root.innerHTML = `<div class="backdrop fixed" data-act="closeTable"><div class="sheet" data-act="noop">
-      <div class="row"><h2>${t.label}</h2><span class="spacer"></span><button class="ghost small" data-act="closeTable">Fechar</button></div>
+      <div class="row sheet-head"><h2>${t.label}</h2><span class="spacer"></span><button class="ghost small" data-act="closeTable">Fechar</button></div>
       ${!s ? '<p class="muted">Mesa livre. Quando o cliente fizer o primeiro pedido pelo QR Code, a conta abre aqui.</p>' : `
         <div class="row" style="margin:10px 0">
           ${s.waiterAt ? '<button data-act="ack" data-arg="waiter">✔ Garçom atendeu</button>' : ''}
@@ -605,7 +634,7 @@ function renderEditModal(root) {
   const p = edit.item ? findItem(edit.item) : null;
   const catId = p ? menu.find(c => c.items.includes(p)).id : menu[0].id;
   root.innerHTML = `<div class="backdrop fixed" data-act="closeEdit"><div class="sheet" data-act="noop">
-    <h2>${p ? 'Editar item' : 'Novo item'}</h2>
+    <div class="row sheet-head"><h2>${p ? 'Editar item' : 'Novo item'}</h2><span class="spacer"></span><button class="ghost small" data-act="closeEdit">Fechar</button></div>
     <label>Nome<input id="e-name" value="${p ? esc(p.name) : ''}" /></label>
     <label>Descrição<textarea id="e-desc" rows="3">${p ? esc(p.desc) : ''}</textarea></label>
     <div class="row" style="align-items:end"><label style="flex:1">Preço (R$)<input id="e-price" inputmode="decimal" placeholder="0,00" value="${p ? (p.price / 100).toFixed(2).replace('.', ',') : ''}" /></label>
